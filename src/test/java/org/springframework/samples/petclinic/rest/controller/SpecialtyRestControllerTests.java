@@ -215,4 +215,22 @@ class SpecialtyRestControllerTests {
     		.content(newSpecialtyAsJSON).accept(MediaType.APPLICATION_JSON_VALUE).contentType(MediaType.APPLICATION_JSON_VALUE))
         	.andExpect(status().isNotFound());
     }
+
+    @Test
+    @WithMockUser(roles="VET_ADMIN")
+    void testUpdateSpecialtyNotFound() throws Exception {
+        given(this.clinicService.findSpecialtyById(999)).willReturn(null);
+        Specialty newSpecialty = specialties.get(1);
+        newSpecialty.setId(999);
+        newSpecialty.setName("surgery I");
+        ObjectMapper mapper = new ObjectMapper();
+        String newSpecialtyAsJSON = mapper.writeValueAsString(specialtyMapper.toSpecialtyDto(newSpecialty));
+
+        this.mockMvc.perform(put("/api/specialties/999")
+                .content(newSpecialtyAsJSON).accept(MediaType.APPLICATION_JSON_VALUE).contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(status().isNotFound());
+
+        org.mockito.Mockito.verify(clinicService, org.mockito.Mockito.never())
+            .saveSpecialty(org.mockito.ArgumentMatchers.any());
+    }
 }

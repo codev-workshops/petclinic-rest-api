@@ -622,4 +622,26 @@ class OwnerRestControllerTests {
             .andExpect(status().isNotFound());
     }
 
+    @Test
+    @WithMockUser(roles = "OWNER_ADMIN")
+    void testUpdateOwnerNotFound() throws Exception {
+        given(this.clinicService.findOwnerById(999)).willReturn(null);
+        OwnerDto updatedOwnerDto = new OwnerDto();
+        updatedOwnerDto.setId(999);
+        updatedOwnerDto.setFirstName("GeorgeI");
+        updatedOwnerDto.setLastName("Franklin");
+        updatedOwnerDto.setAddress("110 W. Liberty St.");
+        updatedOwnerDto.setCity("Madison");
+        updatedOwnerDto.setTelephone("6085551023");
+        ObjectMapper mapper = new ObjectMapper();
+        String newOwnerAsJSON = mapper.writeValueAsString(updatedOwnerDto);
+
+        this.mockMvc.perform(put("/api/owners/999")
+                .content(newOwnerAsJSON).accept(MediaType.APPLICATION_JSON_VALUE).contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(status().isNotFound());
+
+        org.mockito.Mockito.verify(clinicService, org.mockito.Mockito.never())
+            .saveOwner(org.mockito.ArgumentMatchers.any());
+    }
+
 }

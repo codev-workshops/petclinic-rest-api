@@ -213,4 +213,24 @@ class PetRestControllerTests {
             .andExpect(status().isNotFound());
     }
 
+    @Test
+    @WithMockUser(roles = "OWNER_ADMIN")
+    void testUpdatePetNotFound() throws Exception {
+        given(this.clinicService.findPetById(999)).willReturn(null);
+        PetDto newPet = pets.get(0);
+        newPet.setId(999);
+        newPet.setName("Rosy I");
+        ObjectMapper mapper = JsonMapper.builder()
+            .defaultDateFormat(new SimpleDateFormat("dd/MM/yyyy"))
+            .build();
+        String newPetAsJSON = mapper.writeValueAsString(newPet);
+
+        this.mockMvc.perform(put("/api/pets/999")
+                .content(newPetAsJSON).accept(MediaType.APPLICATION_JSON_VALUE).contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(status().isNotFound());
+
+        org.mockito.Mockito.verify(clinicService, org.mockito.Mockito.never())
+            .savePet(org.mockito.ArgumentMatchers.any());
+    }
+
 }

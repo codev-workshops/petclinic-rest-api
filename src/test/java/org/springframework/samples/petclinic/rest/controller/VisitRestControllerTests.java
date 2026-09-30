@@ -241,4 +241,21 @@ class VisitRestControllerTests {
         	.andExpect(status().isNotFound());
     }
 
+    @Test
+    @WithMockUser(roles="OWNER_ADMIN")
+    void testUpdateVisitNotFound() throws Exception {
+        given(this.clinicService.findVisitById(999)).willReturn(null);
+        Visit newVisit = visits.get(0);
+        newVisit.setDescription("rabies shot test");
+        ObjectMapper mapper = new ObjectMapper();
+        String newVisitAsJSON = mapper.writeValueAsString(visitMapper.toVisitDto(newVisit));
+
+        this.mockMvc.perform(put("/api/visits/999")
+                .content(newVisitAsJSON).accept(MediaType.APPLICATION_JSON_VALUE).contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(status().isNotFound());
+
+        org.mockito.Mockito.verify(clinicService, org.mockito.Mockito.never())
+            .saveVisit(org.mockito.ArgumentMatchers.any());
+    }
+
 }

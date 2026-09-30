@@ -250,4 +250,22 @@ class PetTypeRestControllerTests {
         	.andExpect(status().isNotFound());
     }
 
+    @Test
+    @WithMockUser(roles="VET_ADMIN")
+    void testUpdatePetTypeNotFound() throws Exception {
+        given(this.clinicService.findPetTypeById(999)).willReturn(null);
+        PetType newPetType = petTypes.get(1);
+        newPetType.setId(999);
+        newPetType.setName("dog I");
+        ObjectMapper mapper = new ObjectMapper();
+        String newPetTypeAsJSON = mapper.writeValueAsString(petTypeMapper.toPetTypeDto(newPetType));
+
+        this.mockMvc.perform(put("/api/pettypes/999")
+                .content(newPetTypeAsJSON).accept(MediaType.APPLICATION_JSON_VALUE).contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(status().isNotFound());
+
+        org.mockito.Mockito.verify(clinicService, org.mockito.Mockito.never())
+            .savePetType(org.mockito.ArgumentMatchers.any());
+    }
+
 }
