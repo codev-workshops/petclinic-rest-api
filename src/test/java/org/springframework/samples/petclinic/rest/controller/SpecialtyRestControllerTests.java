@@ -37,7 +37,10 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -230,7 +233,6 @@ class SpecialtyRestControllerTests {
                 .content(newSpecialtyAsJSON).accept(MediaType.APPLICATION_JSON_VALUE).contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(status().isNotFound());
 
-        org.mockito.Mockito.verify(clinicService, org.mockito.Mockito.never())
-            .saveSpecialty(org.mockito.ArgumentMatchers.any());
+        verify(clinicService, never()).saveSpecialty(any());
     }
 }

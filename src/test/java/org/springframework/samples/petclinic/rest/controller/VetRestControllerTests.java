@@ -17,14 +17,18 @@
 package org.springframework.samples.petclinic.rest.controller;
 
 import tools.jackson.databind.ObjectMapper;
+import org.mockito.ArgumentCaptor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.samples.petclinic.model.Specialty;
 import org.springframework.samples.petclinic.mapper.VetMapper;
 import org.springframework.samples.petclinic.model.Vet;
 import org.springframework.samples.petclinic.rest.advice.ExceptionControllerAdvice;
+import org.springframework.samples.petclinic.rest.dto.SpecialtyDto;
+import org.springframework.samples.petclinic.rest.dto.VetDto;
 import org.springframework.samples.petclinic.service.ClinicService;
 import org.springframework.samples.petclinic.service.clinicService.ApplicationTestConfig;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -36,8 +40,13 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -233,8 +242,7 @@ class VetRestControllerTests {
                 .content(newVetAsJSON).accept(MediaType.APPLICATION_JSON_VALUE).contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(status().isNotFound());
 
-        org.mockito.Mockito.verify(clinicService, org.mockito.Mockito.never())
-            .saveVet(org.mockito.ArgumentMatchers.any());
+        verify(clinicService, never()).saveVet(any());
     }
 
     @Test
@@ -242,31 +250,30 @@ class VetRestControllerTests {
     void testCreateVetWithSpecialtiesResolvesThemByName() throws Exception {
         Vet newVet = vets.get(0);
         newVet.setId(999);
-        org.springframework.samples.petclinic.rest.dto.VetDto newVetDto = vetMapper.toVetDto(newVet);
-        newVetDto.addSpecialtiesItem(new org.springframework.samples.petclinic.rest.dto.SpecialtyDto().id(1).name("radiology"));
-        org.springframework.samples.petclinic.model.Specialty resolvedSpecialty = new org.springframework.samples.petclinic.model.Specialty();
+        VetDto newVetDto = vetMapper.toVetDto(newVet);
+        newVetDto.addSpecialtiesItem(new SpecialtyDto().id(1).name("radiology"));
+        Specialty resolvedSpecialty = new Specialty();
         resolvedSpecialty.setId(1);
         resolvedSpecialty.setName("radiology");
-        given(this.clinicService.findSpecialtiesByNameIn(java.util.Set.of("radiology")))
-            .willReturn(java.util.List.of(resolvedSpecialty));
+        given(this.clinicService.findSpecialtiesByNameIn(Set.of("radiology")))
+            .willReturn(List.of(resolvedSpecialty));
         ObjectMapper mapper = new ObjectMapper();
         String newVetAsJSON = mapper.writeValueAsString(newVetDto);
-        org.mockito.ArgumentCaptor<Vet> savedVet = org.mockito.ArgumentCaptor.forClass(Vet.class);
+        ArgumentCaptor<Vet> savedVet = ArgumentCaptor.forClass(Vet.class);
 
         this.mockMvc.perform(post("/api/vets")
                 .content(newVetAsJSON).accept(MediaType.APPLICATION_JSON_VALUE).contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.specialties[0].name").value("radiology"));
 
-        org.mockito.Mockito.verify(clinicService).saveVet(savedVet.capture());
-        org.assertj.core.api.Assertions.assertThat(savedVet.getValue().getSpecialties())
-            .containsExactly(resolvedSpecialty);
+        verify(clinicService).saveVet(savedVet.capture());
+        assertThat(savedVet.getValue().getSpecialties()).containsExactly(resolvedSpecialty);
     }
 
     @Test
     @WithMockUser(roles="VET_ADMIN")
     void testCreateVetWithoutSpecialtiesDoesNotLookThemUp() throws Exception {
-        org.springframework.samples.petclinic.rest.dto.VetDto newVetDto = vetMapper.toVetDto(vets.get(0));
+        VetDto newVetDto = vetMapper.toVetDto(vets.get(0));
         ObjectMapper mapper = new ObjectMapper();
         String newVetAsJSON = mapper.writeValueAsString(newVetDto);
 
@@ -274,8 +281,7 @@ class VetRestControllerTests {
                 .content(newVetAsJSON).accept(MediaType.APPLICATION_JSON_VALUE).contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(status().isCreated());
 
-        org.mockito.Mockito.verify(clinicService, org.mockito.Mockito.never())
-            .findSpecialtiesByNameIn(org.mockito.ArgumentMatchers.any());
+        verify(clinicService, never()).findSpecialtiesByNameIn(any());
     }
 
     @Test
@@ -283,28 +289,27 @@ class VetRestControllerTests {
     void testUpdateVetWithSpecialtiesResolvesThemByName() throws Exception {
         Vet currentVet = vets.get(0);
         given(this.clinicService.findVetById(1)).willReturn(currentVet);
-        org.springframework.samples.petclinic.model.Specialty resolvedSpecialty = new org.springframework.samples.petclinic.model.Specialty();
+        Specialty resolvedSpecialty = new Specialty();
         resolvedSpecialty.setId(1);
         resolvedSpecialty.setName("radiology");
-        given(this.clinicService.findSpecialtiesByNameIn(java.util.Set.of("radiology")))
-            .willReturn(java.util.List.of(resolvedSpecialty));
-        org.springframework.samples.petclinic.rest.dto.VetDto updatedVetDto = vetMapper.toVetDto(currentVet);
+        given(this.clinicService.findSpecialtiesByNameIn(Set.of("radiology")))
+            .willReturn(List.of(resolvedSpecialty));
+        VetDto updatedVetDto = vetMapper.toVetDto(currentVet);
         updatedVetDto.setFirstName("Updated");
         updatedVetDto.setLastName("Carter");
-        updatedVetDto.addSpecialtiesItem(new org.springframework.samples.petclinic.rest.dto.SpecialtyDto().id(1).name("radiology"));
+        updatedVetDto.addSpecialtiesItem(new SpecialtyDto().id(1).name("radiology"));
         ObjectMapper mapper = new ObjectMapper();
         String updatedVetAsJSON = mapper.writeValueAsString(updatedVetDto);
-        org.mockito.ArgumentCaptor<Vet> savedVet = org.mockito.ArgumentCaptor.forClass(Vet.class);
+        ArgumentCaptor<Vet> savedVet = ArgumentCaptor.forClass(Vet.class);
 
         this.mockMvc.perform(put("/api/vets/1")
                 .content(updatedVetAsJSON).accept(MediaType.APPLICATION_JSON_VALUE).contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(status().isNoContent());
 
-        org.mockito.Mockito.verify(clinicService).saveVet(savedVet.capture());
-        org.assertj.core.api.Assertions.assertThat(savedVet.getValue().getSpecialties())
-            .containsExactly(resolvedSpecialty);
-        org.assertj.core.api.Assertions.assertThat(savedVet.getValue().getFirstName()).isEqualTo("Updated");
-        org.assertj.core.api.Assertions.assertThat(savedVet.getValue().getLastName()).isEqualTo("Carter");
+        verify(clinicService).saveVet(savedVet.capture());
+        assertThat(savedVet.getValue().getSpecialties()).containsExactly(resolvedSpecialty);
+        assertThat(savedVet.getValue().getFirstName()).isEqualTo("Updated");
+        assertThat(savedVet.getValue().getLastName()).isEqualTo("Carter");
     }
 
 }

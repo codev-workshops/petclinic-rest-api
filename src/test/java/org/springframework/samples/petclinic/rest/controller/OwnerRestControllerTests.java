@@ -51,6 +51,8 @@ import java.util.List;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -640,8 +642,7 @@ class OwnerRestControllerTests {
                 .content(newOwnerAsJSON).accept(MediaType.APPLICATION_JSON_VALUE).contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(status().isNotFound());
 
-        org.mockito.Mockito.verify(clinicService, org.mockito.Mockito.never())
-            .saveOwner(org.mockito.ArgumentMatchers.any());
+        verify(clinicService, never()).saveOwner(any());
     }
 
 }
